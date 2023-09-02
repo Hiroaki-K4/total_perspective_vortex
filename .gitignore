@@ -1,3 +1,4 @@
 vortex/
 eeg-motor-movementimagery-dataset-1.0.0/
 srcs/__pycache__/
+.mypy_cache/
