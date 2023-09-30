@@ -20,6 +20,10 @@ def main(eeg_data_path: str):
     print("Event type: ", event_dict)
     print("Event time and type: ", events_from_annot)
 
+    picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+    print("picks: ", picks)
+    input()
+
     plt.show()
 
 
