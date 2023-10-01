@@ -24,11 +24,7 @@ Subjects performed different motor/imagery tasks while 64-channel EEG were recor
 4. A target appears on either the top or the bottom of the screen. The subject imagines opening and closing either both fists (if the target is on top) or both feet (if the target is on the bottom) until the target disappears. Then the subject relaxes.
 ```
 
-
 You can know details and get the EEG dataset from [here](https://physionet.org/content/eegmmidb/1.0.0/).
-
-
-
 
 Let's explore dataset by running below command.
 
