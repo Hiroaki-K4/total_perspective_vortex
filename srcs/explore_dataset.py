@@ -11,8 +11,6 @@ from mne.io import concatenate_raws, read_raw_edf
 from mne.datasets import eegbci
 from mne.decoding import CSP
 
-print(__doc__)
-
 
 def main():
     # #############################################################################
@@ -69,15 +67,10 @@ def main():
     # Use scikit-learn Pipeline with cross_val_score function
     clf = Pipeline([("CSP", csp), ("LDA", lda)])
     scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=None)
-    print("scores: ", scores)
-    input()
 
     # Printing the results
     # class_balance = np.mean(labels == labels[0])
     class_balance = np.mean(labels)
-    print(labels)
-    print("class_balance: ", class_balance)
-    input()
     class_balance = max(class_balance, 1.0 - class_balance)
     print(
         "Classification accuracy: %f / Chance level: %f" % (np.mean(scores), class_balance)
@@ -96,8 +89,6 @@ def main():
     scores_windows = []
 
     for train_idx, test_idx in cv_split:
-        print(train_idx, test_idx)
-        input()
         y_train, y_test = labels[train_idx], labels[test_idx]
 
         X_train = csp.fit_transform(epochs_data_train[train_idx], y_train)
@@ -115,15 +106,14 @@ def main():
 
     # Plot scores over time
     w_times = (w_start + w_length / 2.0) / sfreq + epochs.tmin
+    print("w_times: ", w_times)
+    input()
 
     plt.figure()
     plt.plot(w_times, np.mean(scores_windows, 0), label="Score")
-    plt.axvline(0, linestyle="--", color="k", label="Onset")
-    plt.axhline(0.5, linestyle="-", color="k", label="Chance")
     plt.xlabel("time (s)")
     plt.ylabel("classification accuracy")
     plt.title("Classification score over time")
-    plt.legend(loc="lower right")
 
 
 if __name__ == '__main__':
