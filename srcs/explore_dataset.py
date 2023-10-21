@@ -11,6 +11,8 @@ from mne.io import concatenate_raws, read_raw_edf
 from mne.datasets import eegbci
 from mne.decoding import CSP
 
+from csp import CSP_ORI
+
 
 def main():
     # #############################################################################
@@ -20,7 +22,7 @@ def main():
     # cue onset.
     tmin, tmax = -1.0, 4.0
     event_id = dict(hands=2, feet=3)
-    subject = 1
+    subject = 3 # 109 volunteers
     runs = [6, 10, 14]  # motor imagery: hands vs feet
 
     raw_fnames = eegbci.load_data(subject, runs)
@@ -63,6 +65,7 @@ def main():
     # Assemble a classifier
     lda = LinearDiscriminantAnalysis()
     csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
+    csp_cust = CSP_ORI(n_components=4)
 
     # Use scikit-learn Pipeline with cross_val_score function
     clf = Pipeline([("CSP", csp), ("LDA", lda)])
@@ -80,6 +83,7 @@ def main():
     csp.fit_transform(epochs_data, labels)
 
     csp.plot_patterns(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
+    csp.plot_filters(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
 
     sfreq = raw.info["sfreq"]
     w_length = int(sfreq * 0.5)  # running classifier: window length
@@ -92,22 +96,47 @@ def main():
         y_train, y_test = labels[train_idx], labels[test_idx]
 
         X_train = csp.fit_transform(epochs_data_train[train_idx], y_train)
-        X_test = csp.transform(epochs_data_train[test_idx])
+        csp_cust.fit(epochs_data_train[train_idx], y_train)
+        input()
+        # X_test = csp.transform(epochs_data_train[test_idx])
 
         # fit classifier
         lda.fit(X_train, y_train)
 
         # running classifier: test classifier on sliding window
         score_this_window = []
+        # Test data shape (Split per label, channel, data point)
         for n in w_start:
+            print("Input test shape: ", epochs_data[test_idx][:, :, n : (n + w_length)].shape)
             X_test = csp.transform(epochs_data[test_idx][:, :, n : (n + w_length)])
+            print("pick filters: ", csp.filters_[: 4].shape)
+            pick_filters = csp.filters_[: 4]
+            X = np.asarray([np.dot(pick_filters, epoch) for epoch in epochs_data[test_idx][:, :, n : (n + w_length)]])
+            print("X_shape: ", X.shape)
+            X = (X**2).mean(axis=2)
+            print("Mean: ", X.shape)
+            # X_test shape (Split per label, extracted components)
+            print("X_test shape: ", X_test.shape)
+            print(X_test)
+            input()
             score_this_window.append(lda.score(X_test, y_test))
+            X_r = lda.predict(X_test)
+            print("X_r: ", X_r)
+            print("y_test: ", y_test)
+            print("score: ", lda.score(X_test, y_test))
+            input()
         scores_windows.append(score_this_window)
 
     # Plot scores over time
     w_times = (w_start + w_length / 2.0) / sfreq + epochs.tmin
-    print("w_times: ", w_times)
-    input()
+    # print("w_times: ", w_times)
+    # input()
+    
+    print()
+    print("Sampling frequency: ", sfreq)
+    print("Window length: ", w_length)
+    print("Window step size: ", w_step)
+    print("Window start position: ", w_start)
 
     plt.figure()
     plt.plot(w_times, np.mean(scores_windows, 0), label="Score")
