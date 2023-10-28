@@ -15,12 +15,14 @@ check_result() {
 test_csp() {
     cd srcs
     python3 test_csp.py
+    check_result "test_csp.py"
     cd ../
 }
 
 test_training() {
     cd srcs
     python3 explore_dataset.py NotShow
+    check_result "explore_dataset.py"
     cd ../
 }
 
