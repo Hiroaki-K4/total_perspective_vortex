@@ -1,12 +1,10 @@
-import numpy as np
-from numpy.fft import fft, fftfreq
-from scipy import signal
 import matplotlib.pyplot as plt
-
+import mne
+import numpy as np
 from mne.time_frequency.tfr import morlet
 from mne.viz import plot_filter, plot_ideal_filter
-
-import mne
+from numpy.fft import fft, fftfreq
+from scipy import signal
 
 
 def draw_ideal_lowpass_filter():
@@ -25,6 +23,6 @@ def draw_ideal_lowpass_filter():
     plot_ideal_filter(freq, gain, ax, title="Ideal %s Hz lowpass" % f_p, flim=flim)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     draw_ideal_lowpass_filter()
     plt.show()

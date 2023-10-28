@@ -3,7 +3,6 @@ import argparse
 import mne
 from matplotlib import pyplot as plt
 from mne.datasets import eegbci
-
 from preprocess import standardize
 
 
@@ -24,7 +23,9 @@ def main(eeg_data_path: str):
     print("Event type: ", event_dict)
     print("Event time and type: ", events)
 
-    picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+    picks = mne.pick_types(
+        raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads"
+    )
 
     event_id = dict(hands=2, feet=3)
     tmin, tmax = -1.0, 4.0

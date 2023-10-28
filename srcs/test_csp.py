@@ -1,6 +1,3 @@
-import sys
-
-import matplotlib.pyplot as plt
 import numpy as np
 from csp import CSP_ORI
 from mne import Epochs, events_from_annotations, pick_types
@@ -14,11 +11,6 @@ from sklearn.pipeline import Pipeline
 
 
 def main():
-    # #############################################################################
-    # # Set parameters and read data
-
-    # avoid classification of evoked responses by using epochs that start 1s after
-    # cue onset.
     tmin, tmax = -1.0, 4.0
     event_id = dict(hands=2, feet=3)
     subject = 3  # 109 volunteers
@@ -61,7 +53,6 @@ def main():
     epochs_data = epochs.get_data()
     epochs_data_train = epochs_train.get_data()
     cv = ShuffleSplit(10, test_size=0.2, random_state=42)
-    cv_split = cv.split(epochs_data_train)
 
     # Assemble a classifier
     lda = LinearDiscriminantAnalysis()
@@ -84,63 +75,9 @@ def main():
     # plot CSP patterns estimated on full data for visualization
     csp.fit_transform(epochs_data, labels)
 
-    csp.plot_patterns(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
-    csp.plot_filters(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
-
-    sfreq = raw.info["sfreq"]
-    w_length = int(sfreq * 0.5)  # running classifier: window length
-    w_step = int(sfreq * 0.1)  # running classifier: window step size
-    w_start = np.arange(0, epochs_data.shape[2] - w_length, w_step)
-
-    scores_windows = []
-
-    for train_idx, test_idx in cv_split:
-        y_train, y_test = labels[train_idx], labels[test_idx]
-
-        X_train = csp.fit_transform(epochs_data_train[train_idx], y_train)
-        csp_cust.fit(epochs_data_train[train_idx], y_train)
-        # X_test = csp.transform(epochs_data_train[test_idx])
-
-        # fit classifier
-        lda.fit(X_train, y_train)
-
-        # running classifier: test classifier on sliding window
-        score_this_window = []
-        # Test data shape (Split per label, channel, data point)
-        for n in w_start:
-            X_test = csp.transform(epochs_data[test_idx][:, :, n : (n + w_length)])
-            pick_filters = csp.filters_[:4]
-            X = np.asarray(
-                [
-                    np.dot(pick_filters, epoch)
-                    for epoch in epochs_data[test_idx][:, :, n : (n + w_length)]
-                ]
-            )
-            X = (X**2).mean(axis=2)
-            # X_test shape (Split per label, extracted components)
-            score_this_window.append(lda.score(X_test, y_test))
-            X_r = lda.predict(X_test)
-        scores_windows.append(score_this_window)
-
-    # Plot scores over time
-    w_times = (w_start + w_length / 2.0) / sfreq + epochs.tmin
-
-    print()
-    print("Sampling frequency: ", sfreq)
-    print("Window length: ", w_length)
-    print("Window step size: ", w_step)
-    print("Window start position: ", w_start)
-
-    plt.figure()
-    plt.plot(w_times, np.mean(scores_windows, 0), label="Score")
-    plt.xlabel("time (s)")
-    plt.ylabel("classification accuracy")
-    plt.title("Classification score over time")
+    csp.fit(epochs_data, labels)
+    csp_cust.fit(epochs_data, labels)
 
 
 if __name__ == "__main__":
     main()
-    if len(sys.argv) == 2 and sys.argv[1] == "NotShow":
-        print("It shows nothing")
-    else:
-        plt.show()
