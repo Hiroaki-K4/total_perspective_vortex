@@ -14,7 +14,7 @@ check_result() {
 
 test_csp() {
     cd srcs
-    python3 test_csp.py
+    python3 test_csp.py yes
     check_result "test_csp.py"
     cd ../
 }
