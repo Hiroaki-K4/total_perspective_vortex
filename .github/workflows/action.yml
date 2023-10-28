@@ -1,0 +1,29 @@
+name: ML PRACTICE CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run test
+      run: docker run --rm -v $(pwd)/srcs:/data cytopia/black . --check --verbose --diff --color
+
+  csp_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run test
+      run: bash test.sh csp
+
+  training_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run test
+      run: bash test.sh training
