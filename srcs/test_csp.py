@@ -77,6 +77,12 @@ def main():
 
     csp.fit(epochs_data, labels)
     csp_cust.fit(epochs_data, labels)
+    csp_data_log = csp_cust.transform(epochs_data, True)
+    print("csp_data_log: ", csp_data_log)
+    csp_data_mean = csp_cust.transform(epochs_data, False)
+    print("csp_data_mean: ", csp_data_mean)
+    csp_ori = csp.transform(epochs_data)
+    print("csp_ori: ", csp_ori)
 
 
 if __name__ == "__main__":
