@@ -1,7 +1,9 @@
+import argparse
 import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from joblib import dump, load
 from mne import Epochs, events_from_annotations, pick_types
 from mne.channels import make_standard_montage
 from mne.datasets import eegbci
@@ -14,19 +16,30 @@ from sklearn.pipeline import Pipeline
 from csp import CSP_ORI
 
 
-def main():
+def main(output_model_path: str, subjects_num: int):
     # #############################################################################
     # # Set parameters and read data
 
     # avoid classification of evoked responses by using epochs that start 1s after
     # cue onset.
+    if subjects_num > 109 or subjects_num < 1:
+        raise ValueError("The number of subjects is wrong.")
+
     tmin, tmax = -1.0, 4.0
     event_id = dict(hands=2, feet=3)
-    subject = 1  # 109 volunteers
+    subject = 3  # 109 volunteers
     runs = [6, 10, 14]  # motor imagery: hands vs feet
+    excluded_subs = [88, 89, 92, 100]
 
-    raw_fnames = eegbci.load_data(subject, runs)
-    raw = concatenate_raws([read_raw_edf(f, preload=True) for f in raw_fnames])
+    all_raw_files = []
+    for subject in range(1, subjects_num + 1):
+        if subject in excluded_subs:
+            continue
+        raw_fnames = eegbci.load_data(subject, runs)
+        for raw_fname in raw_fnames:
+            all_raw_files.append(raw_fname)
+
+    raw = concatenate_raws([read_raw_edf(f, preload=True) for f in all_raw_files])
     raw.plot(scalings="auto", show=False)
     eegbci.standardize(raw)  # set channel names
     montage = make_standard_montage("standard_1005")
@@ -77,10 +90,6 @@ def main():
     # class_balance = np.mean(labels == labels[0])
     class_balance = np.mean(labels)
     class_balance = max(class_balance, 1.0 - class_balance)
-    print(
-        "Classification accuracy: %f / Chance level: %f"
-        % (np.mean(scores), class_balance)
-    )
 
     # plot CSP patterns estimated on full data for visualization
     csp.fit_transform(epochs_data, labels)
@@ -99,7 +108,7 @@ def main():
         y_train, y_test = labels[train_idx], labels[test_idx]
 
         X_train = csp.fit_transform(epochs_data_train[train_idx], y_train)
-        csp_cust.fit(epochs_data_train[train_idx], y_train)
+        # csp_cust.fit(epochs_data_train[train_idx], y_train)
         # X_test = csp.transform(epochs_data_train[test_idx])
 
         # fit classifier
@@ -127,6 +136,10 @@ def main():
     w_times = (w_start + w_length / 2.0) / sfreq + epochs.tmin
 
     print()
+    print(
+        "Classification accuracy: %f / Chance level: %f"
+        % (np.mean(scores), class_balance)
+    )
     print("Sampling frequency: ", sfreq)
     print("Window length: ", w_length)
     print("Window step size: ", w_step)
@@ -138,10 +151,25 @@ def main():
     plt.ylabel("classification accuracy")
     plt.title("Classification score over time")
 
+    dump(clf, output_model_path)
+    load_clf = load(output_model_path)
+    load_scores = cross_val_score(
+        load_clf, epochs_data_train, labels, cv=cv, n_jobs=None
+    )
+    print(
+        "Classification accuracy by loaded model: %f / Chance level: %f"
+        % (np.mean(load_scores), class_balance)
+    )
+
 
 if __name__ == "__main__":
-    main()
-    if len(sys.argv) == 2 and sys.argv[1] == "NotShow":
-        print("It shows nothing")
-    else:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_model_path", type=str)
+    parser.add_argument("--subjects_num", type=int)
+    parser.add_argument("--show", action="store_true")
+    args = parser.parse_args()
+    main(args.output_model_path, args.subjects_num)
+    if args.show:
         plt.show()
+    else:
+        print("It shows nothing")

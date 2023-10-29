@@ -29,7 +29,7 @@ You can know details and get the EEG dataset from [here](https://physionet.org/c
 Let's explore dataset by running below command.
 
 ```bash
-python3 srcs/explore_dataset.py --eeg_data_path eeg-motor-movementimagery-dataset-1.0.0/files/S001/S001R08.edf
+python3 srcs/explore_dataset.py
 ```
 
 This is the result of visualizing the raw data.
@@ -40,8 +40,14 @@ The position of the sensors are as follows.
 
 <img src='images/sensor.png' width='600'>
 
+```bash
+python3 srcs/train.py --output_model_path model/pipeline.joblib --subjects_num 109 --show
+```
+
 <br></br>
 
 ## References
 - [EEG Motor Movement/Imagery Dataset](https://physionet.org/content/eegmmidb/1.0.0/)
 - [Motor imagery decoding from EEG data using the Common Spatial Pattern (CSP)](https://mne.tools/stable/auto_examples/decoding/decoding_csp_eeg.html)
+- [Optimizing Spatial Filters for Robust EEG Single-Trial Analysis](https://doc.ml.tu-berlin.de/bbci/publications/BlaTomLemKawMue08.pdf)
+- [Blind Source Separation via Generalized Eigenvalue Decomposition](https://www.jmlr.org/papers/volume4/parra03a/parra03a.pdf)

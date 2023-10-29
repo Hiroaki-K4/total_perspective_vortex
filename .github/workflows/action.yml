@@ -21,6 +21,13 @@ jobs:
     - name: Run test
       run: bash test.sh csp
 
+  exploration_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run test
+      run: bash test.sh exploration
+
   training_test:
     runs-on: ubuntu-latest
     steps:
