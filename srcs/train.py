@@ -1,7 +1,9 @@
-import sys
 import argparse
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
+from joblib import dump, load
 from mne import Epochs, events_from_annotations, pick_types
 from mne.channels import make_standard_montage
 from mne.datasets import eegbci
@@ -10,7 +12,6 @@ from mne.io import concatenate_raws, read_raw_edf
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.model_selection import ShuffleSplit, cross_val_score
 from sklearn.pipeline import Pipeline
-from joblib import dump, load
 
 from csp import CSP_ORI
 
@@ -152,7 +153,9 @@ def main(output_model_path: str, subjects_num: int):
 
     dump(clf, output_model_path)
     load_clf = load(output_model_path)
-    load_scores = cross_val_score(load_clf, epochs_data_train, labels, cv=cv, n_jobs=None)
+    load_scores = cross_val_score(
+        load_clf, epochs_data_train, labels, cv=cv, n_jobs=None
+    )
     print(
         "Classification accuracy by loaded model: %f / Chance level: %f"
         % (np.mean(load_scores), class_balance)
