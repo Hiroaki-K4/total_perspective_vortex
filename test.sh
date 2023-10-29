@@ -31,6 +31,11 @@ test_training() {
     check_result "train.py"
 }
 
+test_prediction() {
+    yes | python3 srcs/predict.py --model_path model/pipeline.joblib --test_subject_num 1
+    check_result "predict.py"
+}
+
 python3 -m pip install -r requirements.txt
 
 if [ $# -eq 1 ]; then
@@ -40,6 +45,8 @@ if [ $# -eq 1 ]; then
         test_exploration
     elif [ $1 = "training" ]; then
         test_training
+    elif [ $1 = "prediction" ]; then
+        test_prediction
     else
         echo "Argument is wrong"
         exit 1
@@ -49,4 +56,5 @@ else
     test_csp
     test_exploration
     test_training
+    test_prediction
 fi

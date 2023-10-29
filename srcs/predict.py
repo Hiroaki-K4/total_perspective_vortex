@@ -1,11 +1,8 @@
 import argparse
-import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
-from joblib import dump, load
+from joblib import load
 from mne import Epochs, events_from_annotations, pick_types
-from mne.channels import make_standard_montage
 from mne.datasets import eegbci
 from mne.decoding import CSP
 from mne.io import concatenate_raws, read_raw_edf
@@ -16,33 +13,17 @@ from sklearn.pipeline import Pipeline
 from csp import CSP_ORI
 
 
-def main(output_model_path: str, subjects_num: int):
-    # #############################################################################
-    # # Set parameters and read data
-
-    # avoid classification of evoked responses by using epochs that start 1s after
-    # cue onset.
-    if subjects_num < 1 or subjects_num > 109:
-        raise ValueError("The number of subjects is wrong.")
+def main(model_path: str, test_subject_num: int):
+    if test_subject_num < 1 or test_subject_num > 109:
+        raise ValueError("The number of subject is wrong.")
 
     tmin, tmax = -1.0, 4.0
     event_id = dict(hands=2, feet=3)
     runs = [6, 10, 14]  # motor imagery: hands vs feet
-    excluded_subs = [88, 89, 92, 100]
 
-    all_raw_files = []
-    for subject in range(1, subjects_num + 1):
-        if subject in excluded_subs:
-            continue
-        raw_fnames = eegbci.load_data(subject, runs)
-        for raw_fname in raw_fnames:
-            all_raw_files.append(raw_fname)
-
-    raw = concatenate_raws([read_raw_edf(f, preload=True) for f in all_raw_files])
-    raw.plot(scalings="auto", show=False)
+    raw_fnames = eegbci.load_data(test_subject_num, runs)
+    raw = concatenate_raws([read_raw_edf(f, preload=True) for f in raw_fnames])
     eegbci.standardize(raw)  # set channel names
-    montage = make_standard_montage("standard_1005")
-    raw.set_montage(montage)
 
     # Apply band-pass filter
     raw.filter(7.0, 30.0, fir_design="firwin", skip_by_annotation="edge")
@@ -93,8 +74,8 @@ def main(output_model_path: str, subjects_num: int):
     # plot CSP patterns estimated on full data for visualization
     csp.fit_transform(epochs_data, labels)
 
-    csp.plot_patterns(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
-    csp.plot_filters(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
+    # csp.plot_patterns(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
+    # csp.plot_filters(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
 
     sfreq = raw.info["sfreq"]
     w_length = int(sfreq * 0.5)  # running classifier: window length
@@ -128,7 +109,12 @@ def main(output_model_path: str, subjects_num: int):
             X = (X**2).mean(axis=2)
             # X_test shape (Split per label, extracted components)
             score_this_window.append(lda.score(X_test, y_test))
+            # print("X_test: ", X_test)
+            # print("X_test shape: ", X_test.shape)
             X_r = lda.predict(X_test)
+            # print("X_r: ", X_r)
+            # print("X_r shape: ", X_r.shape)
+            # input()
         scores_windows.append(score_this_window)
 
     # Plot scores over time
@@ -144,14 +130,7 @@ def main(output_model_path: str, subjects_num: int):
     print("Window step size: ", w_step)
     print("Window start position: ", w_start)
 
-    plt.figure()
-    plt.plot(w_times, np.mean(scores_windows, 0), label="Score")
-    plt.xlabel("time (s)")
-    plt.ylabel("classification accuracy")
-    plt.title("Classification score over time")
-
-    dump(clf, output_model_path)
-    load_clf = load(output_model_path)
+    load_clf = load(model_path)
     load_scores = cross_val_score(
         load_clf, epochs_data_train, labels, cv=cv, n_jobs=None
     )
@@ -159,16 +138,22 @@ def main(output_model_path: str, subjects_num: int):
         "Classification accuracy by loaded model: %f / Chance level: %f"
         % (np.mean(load_scores), class_balance)
     )
+    test_arr = np.array([[-0.72529312, -0.76191344, -1.14408692, -0.72406326],
+        [-0.81308067, -1.86396619, -1.02070761, -0.78204146],
+        [-0.67324558, -0.97431868, -1.0825769, -0.35101408],
+        [-0.65393816, -1.32555023, -1.03991421, -1.13532538],
+        [-0.3839236, -0.654401, -0.23534417, 0.24206348],
+        [ 0.16429076, -2.25138604, -0.98065334, -0.88276778],
+        [-0.76095944, -2.49098298, -0.07065976, -0.95260005],
+        [-0.69987959, -1.36959092, -1.09517518, -0.67303866],
+        [ 0.54672016, -1.79176205, -1.20117019, -0.65071543]])
+    pred = load_clf.predict(test_arr)
+    print("Pred: ", pred)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_model_path", type=str)
-    parser.add_argument("--subjects_num", type=int)
-    parser.add_argument("--show", action="store_true")
+    parser.add_argument("--model_path", type=str)
+    parser.add_argument("--test_subject_num", type=int)
     args = parser.parse_args()
-    main(args.output_model_path, args.subjects_num)
-    if args.show:
-        plt.show()
-    else:
-        print("It shows nothing")
+    main(args.model_path, args.test_subject_num)
