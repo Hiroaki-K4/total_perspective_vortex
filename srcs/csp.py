@@ -36,21 +36,21 @@ class CSP_ORI:
         self.filters = eig_vecs.T
         self.patterns = np.linalg.inv(eig_vecs)
         pick_filters = self.filters[: self.n_components]
-        print("pick_filters: ", pick_filters)
-        print("pick_filters shape: ", pick_filters.shape)
         x = np.asarray([np.dot(pick_filters, epoch) for epoch in x])
         x = (x**2).mean(axis=2)
         self.mean = x.mean(axis=0)
         self.std = x.std(axis=0)
 
-    def transform(self, x, log):
+    def transform(self, x):
         pick_filters = self.filters[: self.n_components]
         x = np.asarray([np.dot(pick_filters, epoch) for epoch in x])
         x = (x**2).mean(axis=2)
-        if log:
-            x = np.log(x)
-        else:
-            x -= self.mean
-            x /= self.std
+        x -= self.mean
+        x /= self.std
 
         return x
+
+    def fit_transform(self, x, y):
+        self.fit(x, y)
+
+        return self.transform(x)

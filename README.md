@@ -1,13 +1,14 @@
 # total_perspective_vortex
 This project aims to create a brain computer interface based on electroencephalographic data (EEG data) with the help of machine learning algorithms. Using a subject’s EEG reading, we will have to infer what he or she is thinking about or doing - (motion) A or B in a t0 to tn timeframe.
 
+<img src='images/events.png' width='800'>
+
 <br></br>
 
 ## Goals
-- Process EEG datas (parsing and filtering)
+- Process(parsing and filtering) EEG data
 - Implement a dimensionality reduction algorithm
-- Use the pipeline object from scikit-learn
-- Classify a data stream in "real time"
+- Train and predict EEG data
 
 <br></br>
 
@@ -26,23 +27,25 @@ Subjects performed different motor/imagery tasks while 64-channel EEG were recor
 
 You can know details and get the EEG dataset from [here](https://physionet.org/content/eegmmidb/1.0.0/).
 
-Let's explore dataset by running below command.
+<img src='images/sensor.png' width='800'>
+
+<br></br>
+
+## CSP(Common spatial pattern) algorithm
+
+<img src='images/csp.png' width='800'>
+
+<br></br>
+
+## Training and prediction
+
+You can train and predict EEG data(Task 4) by running below command. `--subject_num` is the number of subjects used training and prediction. `--show` is the flag whether program shows the result.
 
 ```bash
-python3 srcs/explore_dataset.py
+python3 srcs/train_and_predict.py --subjects_num 1 --show
 ```
 
-This is the result of visualizing the raw data.
-
-<img src='images/events.png' width='700'>
-
-The position of the sensors are as follows.
-
-<img src='images/sensor.png' width='600'>
-
-```bash
-python3 srcs/train.py --output_model_path model/pipeline.joblib --subjects_num 109 --show
-```
+<img src='images/result.png' width='800'>
 
 <br></br>
 
