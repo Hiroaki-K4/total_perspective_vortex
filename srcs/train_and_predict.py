@@ -1,27 +1,19 @@
 import argparse
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from joblib import dump, load
 from mne import Epochs, events_from_annotations, pick_types
 from mne.channels import make_standard_montage
 from mne.datasets import eegbci
 from mne.decoding import CSP
 from mne.io import concatenate_raws, read_raw_edf
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.model_selection import ShuffleSplit, cross_val_score
-from sklearn.pipeline import Pipeline
+from sklearn.model_selection import ShuffleSplit
 
 from csp import CSP_ORI
 
 
-def main(output_model_path: str, subjects_num: int):
-    # #############################################################################
-    # # Set parameters and read data
-
-    # avoid classification of evoked responses by using epochs that start 1s after
-    # cue onset.
+def main(subjects_num: int):
     if subjects_num < 1 or subjects_num > 109:
         raise ValueError("The number of subjects is wrong.")
 
@@ -40,7 +32,7 @@ def main(output_model_path: str, subjects_num: int):
 
     raw = concatenate_raws([read_raw_edf(f, preload=True) for f in all_raw_files])
     raw.plot(scalings="auto", show=False)
-    eegbci.standardize(raw)  # set channel names
+    eegbci.standardize(raw)
     montage = make_standard_montage("standard_1005")
     raw.set_montage(montage)
 
@@ -70,7 +62,6 @@ def main(output_model_path: str, subjects_num: int):
     labels = epochs.events[:, -1] - 2
 
     # Define a monte-carlo cross-validation generator (reduce variance):
-    scores = []
     epochs_data = epochs.get_data()
     epochs_data_train = epochs_train.get_data()
     cv = ShuffleSplit(10, test_size=0.2, random_state=42)
@@ -79,21 +70,7 @@ def main(output_model_path: str, subjects_num: int):
     # Assemble a classifier
     lda = LinearDiscriminantAnalysis()
     csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
-    csp_cust = CSP_ORI(n_components=4)
-
-    # Use scikit-learn Pipeline with cross_val_score function
-    clf = Pipeline([("CSP", csp), ("LDA", lda)])
-    scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=None)
-
-    # Printing the results
-    # class_balance = np.mean(labels == labels[0])
-    class_balance = np.mean(labels)
-    class_balance = max(class_balance, 1.0 - class_balance)
-
-    # plot CSP patterns estimated on full data for visualization
     csp.fit_transform(epochs_data, labels)
-
-    csp.plot_patterns(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
     csp.plot_filters(epochs.info, ch_type="eeg", units="Patterns (AU)", size=1.5)
 
     sfreq = raw.info["sfreq"]
@@ -101,73 +78,37 @@ def main(output_model_path: str, subjects_num: int):
     w_step = int(sfreq * 0.1)  # running classifier: window step size
     w_start = np.arange(0, epochs_data.shape[2] - w_length, w_step)
 
+    original_csp = CSP_ORI(n_components=4)
     scores_windows = []
-
     for train_idx, test_idx in cv_split:
         y_train, y_test = labels[train_idx], labels[test_idx]
 
-        X_train = csp.fit_transform(epochs_data_train[train_idx], y_train)
-        # csp_cust.fit(epochs_data_train[train_idx], y_train)
-        # X_test = csp.transform(epochs_data_train[test_idx])
-
-        # fit classifier
+        X_train = original_csp.fit_transform(epochs_data_train[train_idx], y_train)
         lda.fit(X_train, y_train)
-
-        # running classifier: test classifier on sliding window
-        score_this_window = []
-        # Test data shape (Split per label, channel, data point)
+        score_window = []
         for n in w_start:
-            X_test = csp.transform(epochs_data[test_idx][:, :, n : (n + w_length)])
-            pick_filters = csp.filters_[:4]
-            X = np.asarray(
-                [
-                    np.dot(pick_filters, epoch)
-                    for epoch in epochs_data[test_idx][:, :, n : (n + w_length)]
-                ]
+            X_test = original_csp.transform(
+                epochs_data[test_idx][:, :, n : (n + w_length)]
             )
-            X = (X**2).mean(axis=2)
-            # X_test shape (Split per label, extracted components)
-            score_this_window.append(lda.score(X_test, y_test))
-            X_r = lda.predict(X_test)
-        scores_windows.append(score_this_window)
+            score_window.append(lda.score(X_test, y_test))
 
-    # Plot scores over time
+        scores_windows.append(score_window)
+
     w_times = (w_start + w_length / 2.0) / sfreq + epochs.tmin
-
-    print()
-    print(
-        "Classification accuracy: %f / Chance level: %f"
-        % (np.mean(scores), class_balance)
-    )
-    print("Sampling frequency: ", sfreq)
-    print("Window length: ", w_length)
-    print("Window step size: ", w_step)
-    print("Window start position: ", w_start)
 
     plt.figure()
     plt.plot(w_times, np.mean(scores_windows, 0), label="Score")
-    plt.xlabel("time (s)")
+    plt.xlabel("time [s]")
     plt.ylabel("classification accuracy")
     plt.title("Classification score over time")
-
-    dump(clf, output_model_path)
-    load_clf = load(output_model_path)
-    load_scores = cross_val_score(
-        load_clf, epochs_data_train, labels, cv=cv, n_jobs=None
-    )
-    print(
-        "Classification accuracy by loaded model: %f / Chance level: %f"
-        % (np.mean(load_scores), class_balance)
-    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_model_path", type=str)
     parser.add_argument("--subjects_num", type=int)
     parser.add_argument("--show", action="store_true")
     args = parser.parse_args()
-    main(args.output_model_path, args.subjects_num)
+    main(args.subjects_num)
     if args.show:
         plt.show()
     else:

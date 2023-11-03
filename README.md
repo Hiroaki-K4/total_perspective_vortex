@@ -41,11 +41,7 @@ The position of the sensors are as follows.
 <img src='images/sensor.png' width='600'>
 
 ```bash
-python3 srcs/train.py --output_model_path model/pipeline.joblib --subjects_num 109 --show
-```
-
-```bash
-python3 srcs/predict.py --model_path model/pipeline.joblib --test_subject_num 1
+python3 srcs/train_and_predict.py --subjects_num 1 --show
 ```
 
 <br></br>
