@@ -31,14 +31,22 @@ You can know details and get the EEG dataset from [here](https://physionet.org/c
 
 <br></br>
 
-## CSP(Common spatial pattern) algorithm
+## CSP(Common Spatial Pattern) algorithm
+Common Spatial Pattern is a technique to analyze multi-channel data based on recordings from two classes (conditions). CSP yields a data-driven supervised decomposition of the signal parameterized by a matrix $W(C\times C)$ ($C$ being the number of channels) that projects the signal $x(t)$ in the original sensor space to $x_{CSP}(t)$, which lives in the surrogate sensor space, as follows:
+
+$$
+x_{CSP}(t)=W^\intercal x(t) \tag{1}
+$$
+
+### How to calculate
+
+
 
 <img src='images/csp.png' width='800'>
 
 <br></br>
 
 ## Training and prediction
-
 You can train and predict EEG data(Task 4) by running below command. `--subject_num` is the number of subjects used training and prediction. `--show` is the flag whether program shows the result.
 
 ```bash
