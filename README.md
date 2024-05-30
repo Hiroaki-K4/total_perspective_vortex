@@ -3,6 +3,9 @@ This project aims to create a brain computer interface based on electroencephalo
 
 <img src='images/events.png' width='800'>
 
+## Related article of mine
+- [Theory and Implementation of CSP(Common Spatial Pattern) Algorithm](https://medium.com/@hirok4/theory-and-implementation-of-csp-common-spatial-pattern-algorithm-f84300e3b4d6)
+
 <br></br>
 
 ## Goals
