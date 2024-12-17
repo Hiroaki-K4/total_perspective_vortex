@@ -38,7 +38,7 @@ You can know details and get the EEG dataset from [here](https://physionet.org/c
 Common Spatial Pattern is a technique to analyze multi-channel data based on recordings from two classes (conditions). CSP yields a data-driven supervised decomposition of the signal parameterized by a matrix $W(C\times C)$ ($C$ is the number of channels) that projects the signal $x(t)$ in the original sensor space to $x_{CSP}(t)$, which lives in the surrogate sensor space, as follows:
 
 $$
-x_{CSP}(t)=W^\intercal x(t) \tag{1}
+x_{CSP}(t)=W^\intercal x(t) \quad (1)
 $$
 
 CSP, like PCA, allows for dimensionality reduction and is especially often used to analyze [EEG](https://en.wikipedia.org/wiki/Electroencephalography) data. The need for spatial filtering in EEG data analysis can be found [here](https://doc.ml.tu-berlin.de/bbci/publications/BlaTomLemKawMue08.pdf).
@@ -49,7 +49,7 @@ Here is the calculation method based on [this paper](https://www.jmlr.org/papers
 The problem of recovering sources from their linear mixtures without knowledge of the mixing channel has been widely studied. In its simplest form it can be expressed as the problem of identifying the factorization of the $N$-dimensional observations $X$ into a mixing channel $A$ and $M$-dimensional sources $S$,
 
 $$
-X=AS \tag{2}
+X=AS \quad (2)
 $$
 
 We consider each column of $X$ and $S$ as a sample in time. In this case we can write Eq(1) as,
